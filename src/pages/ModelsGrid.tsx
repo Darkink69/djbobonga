@@ -21,6 +21,8 @@ import {
 
 const PAGE_SIZE = 50;
 
+type Gender = "female" | "couple_f_m" | "couple_f_f";
+
 /** Mulberry32 — маленький seeded PRNG */
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -63,6 +65,7 @@ export default function ModelsGrid() {
   const [isReversed, setIsReversed] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [onlineOnly, setOnlineOnly] = useState(false);
+  const [genderFilter, setGenderFilter] = useState<Gender | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,25 +98,37 @@ export default function ModelsGrid() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query, selectedDate, shuffleSeed, isReversed, favoritesOnly, onlineOnly]);
+  }, [
+    query,
+    selectedDate,
+    shuffleSeed,
+    isReversed,
+    favoritesOnly,
+    onlineOnly,
+    genderFilter,
+  ]);
 
+  // 1) Текстовый поиск
   const modelsByText = useMemo(
     () => filterModels(models, query),
     [models, query],
   );
 
+  // 2) Дата
   const byDate = useMemo(
     () =>
       selectedDate ? modelsOnlineOn(modelsByText, selectedDate) : modelsByText,
     [modelsByText, selectedDate],
   );
 
+  // 3) Избранное
   const byFavorites = useMemo(
     () =>
       favoritesOnly ? byDate.filter((m) => favorites.includes(m.name)) : byDate,
     [byDate, favoritesOnly, favorites],
   );
 
+  // 4) Онлайн
   const byOnline = useMemo(
     () =>
       onlineOnly
@@ -122,12 +137,22 @@ export default function ModelsGrid() {
     [byFavorites, onlineOnly, onlineNames],
   );
 
+  // 5) Gender
+  const byGender = useMemo(
+    () =>
+      genderFilter
+        ? byOnline.filter((m) => m.gender === genderFilter)
+        : byOnline,
+    [byOnline, genderFilter],
+  );
+
+  // 6) Перемешивание + разворот
   const ordered = useMemo(() => {
-    let list = byOnline;
+    let list = byGender;
     if (shuffleSeed !== 0) list = shuffleWithSeed(list, shuffleSeed);
     if (isReversed) list = [...list].reverse();
     return list;
-  }, [byOnline, shuffleSeed, isReversed]);
+  }, [byGender, shuffleSeed, isReversed]);
 
   const visible = ordered.slice(0, visibleCount);
   const hasMore = visibleCount < ordered.length;
@@ -198,6 +223,10 @@ export default function ModelsGrid() {
         onToggleFavoritesOnly={() => setFavoritesOnly((v) => !v)}
         onlineOnly={onlineOnly}
         onToggleOnlineOnly={() => setOnlineOnly((v) => !v)}
+        genderFilter={genderFilter}
+        onToggleGenderFilter={(g) =>
+          setGenderFilter((prev) => (prev === g ? null : g))
+        }
       />
 
       {calendarOpen && (
@@ -206,7 +235,7 @@ export default function ModelsGrid() {
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           onClose={closeCalendarAndReset}
-          totalCount={byOnline.length}
+          totalCount={byGender.length}
         />
       )}
 

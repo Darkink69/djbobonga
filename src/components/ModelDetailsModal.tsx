@@ -97,7 +97,7 @@ export default function ModelDetailsModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-xl w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Верх: видео при онлайне, иначе — фото */}
@@ -185,19 +185,17 @@ export default function ModelDetailsModal({
           <p className="text-sm font-medium text-gray-700 mb-2 mt-4">Часы:</p>
           <HoursActivity timestamps={model.time_online} />
 
-          {/* Кнопки внизу */}
-          <div className="absolute bottom-4 left-5 right-5 flex items-center justify-between">
-            {!isFavorite ? (
+          {/* Кнопки внизу: черный список + сердечко рядом слева */}
+          <div className="absolute bottom-4 left-5 flex items-center gap-3">
+            {!isFavorite && (
               <button
                 onClick={() => onBlacklist(model)}
-                className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center
-                           hover:bg-gray-800 text-lg leading-none"
+                className="h-8 px-3 rounded-lg bg-black text-white text-xs font-semibold
+                           flex items-center justify-center hover:bg-gray-800"
                 aria-label="В черный список"
               >
-                ×
+                Черный список
               </button>
-            ) : (
-              <div />
             )}
 
             <button
