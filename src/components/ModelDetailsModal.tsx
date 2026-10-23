@@ -190,11 +190,11 @@ export default function ModelDetailsModal({
             {!isFavorite && (
               <button
                 onClick={() => onBlacklist(model)}
-                className="h-8 px-3 rounded-lg bg-black text-white text-xs font-semibold
-                           flex items-center justify-center hover:bg-gray-800"
+                className="absolute top-1 -right-10 w-7 h-7 rounded-full bg-black text-white
+                       flex items-center justify-center hover:bg-gray-800 text-base leading-none"
                 aria-label="В черный список"
               >
-                Черный список
+                ×
               </button>
             )}
 

@@ -10,6 +10,7 @@ import ModelDetailsModal from "../components/ModelDetailsModal";
 import CalendarPanel from "../components/CalendarPanel";
 import { filterModels } from "../utils/search";
 import { modelsOnlineOn } from "../utils/calendar";
+
 import {
   getBlacklist,
   addToBlacklist,
@@ -18,8 +19,10 @@ import {
   getFavorites,
   toggleFavorite,
 } from "../utils/storage";
+import { buildThumbUrl } from "../utils/thumbUrl";
 
 const PAGE_SIZE = 50;
+const THUMB_REFRESH_MS = 30_000;
 
 type Gender = "female" | "couple_f_m" | "couple_f_f";
 
@@ -66,6 +69,9 @@ export default function ModelsGrid() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [onlineOnly, setOnlineOnly] = useState(false);
   const [genderFilter, setGenderFilter] = useState<Gender | null>(null);
+
+  // Timestamp для «живых» ссылок
+  const [thumbTs, setThumbTs] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +162,19 @@ export default function ModelsGrid() {
 
   const visible = ordered.slice(0, visibleCount);
   const hasMore = visibleCount < ordered.length;
+
+  // Активны ли «живые» превью: оба фильтра + непустая выдача
+  const liveThumbsActive = favoritesOnly && onlineOnly && ordered.length > 0;
+
+  useEffect(() => {
+    if (!liveThumbsActive) return;
+    // обновим сразу при активации
+    setThumbTs(Math.floor(Date.now() / 1000));
+    const id = window.setInterval(() => {
+      setThumbTs(Math.floor(Date.now() / 1000));
+    }, THUMB_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [liveThumbsActive]);
 
   const removeFromState = (name: string) => {
     setModels((prev) => prev.filter((m) => m.name !== name));
@@ -254,17 +273,28 @@ export default function ModelsGrid() {
             ) : (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-                  {visible.map((m) => (
-                    <ModelCard
-                      key={m.name}
-                      model={m}
-                      isFavorite={favorites.includes(m.name)}
-                      isOnline={onlineNames.has(m.name)}
-                      onClose={handleCloseRequest}
-                      onToggleFavorite={handleToggleFavorite}
-                      onOpenDetails={setDetails}
-                    />
-                  ))}
+                  {visible.map((m) => {
+                    const liveThumb =
+                      liveThumbsActive && onlineNames.has(m.name)
+                        ? (() => {
+                            const p = profileByName.get(m.name);
+                            return p ? buildThumbUrl(p, thumbTs) : null;
+                          })()
+                        : null;
+
+                    return (
+                      <ModelCard
+                        key={m.name}
+                        model={m}
+                        isFavorite={favorites.includes(m.name)}
+                        isOnline={onlineNames.has(m.name)}
+                        thumbOverride={liveThumb}
+                        onClose={handleCloseRequest}
+                        onToggleFavorite={handleToggleFavorite}
+                        onOpenDetails={setDetails}
+                      />
+                    );
+                  })}
                 </div>
 
                 {hasMore && (

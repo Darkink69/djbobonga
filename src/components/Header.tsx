@@ -40,7 +40,7 @@ export default function Header({
       <div className="mx-auto max-w-7xl px-4 py-3">
         {/* Верхний ряд */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-bold whitespace-nowrap">Модели</h1>
+          <h1 className="text-xl font-bold whitespace-nowrap">Dj Bobonga</h1>
 
           {/* Верхний ряд: мобилка — только избранное, онлайн, поиск */}
           <div className="flex items-center gap-2 md:hidden">

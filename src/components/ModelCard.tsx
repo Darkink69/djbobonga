@@ -6,6 +6,7 @@ interface Props {
   model: Model;
   isFavorite: boolean;
   isOnline: boolean;
+  thumbOverride: string | null;
   onClose: (model: Model) => void;
   onToggleFavorite: (model: Model) => void;
   onOpenDetails: (model: Model) => void;
@@ -27,12 +28,32 @@ export default function ModelCard({
   model,
   isFavorite,
   isOnline,
+  thumbOverride,
   onClose,
   onToggleFavorite,
   onOpenDetails,
 }: Props) {
   const lastOnline = model.time_online?.[model.time_online.length - 1];
-  const [imgSrc, setImgSrc] = useState(model.thumb_image);
+
+  // Источник картинки: override (если задан) или исходный thumb_image
+  const initialSrc = thumbOverride ?? model.thumb_image;
+  const [imgSrc, setImgSrc] = useState(initialSrc);
+
+  // Синхронизация при смене override / модели
+  useEffect(() => {
+    setImgSrc(thumbOverride ?? model.thumb_image);
+  }, [thumbOverride, model.thumb_image]);
+
+  // Живое видео: показываем через <video>, если передан override
+  const useLiveVideo = !!thumbOverride;
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  // Сбрасываем флаг ошибки при смене ссылки
+  useEffect(() => {
+    setVideoFailed(false);
+  }, [thumbOverride]);
+
+  // Тултип рейтинга
   const [showRatingTip, setShowRatingTip] = useState(false);
   const tipRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,15 +74,29 @@ export default function ModelCard({
         className="aspect-3/2 bg-gray-200 relative cursor-pointer"
         onClick={() => onOpenDetails(model)}
       >
-        <img
-          src={imgSrc}
-          alt={model.name}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={() => setImgSrc(FALLBACK_IMG)}
-        />
+        {useLiveVideo && !videoFailed ? (
+          <video
+            key={thumbOverride} // пересоздаём при смене URL (раз в 30 сек)
+            src={thumbOverride ?? undefined}
+            className="w-full h-full object-cover"
+            muted
+            autoPlay
+            loop
+            playsInline
+            preload="metadata"
+            onError={() => setVideoFailed(true)}
+          />
+        ) : (
+          <img
+            src={imgSrc}
+            alt={model.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={() => setImgSrc(FALLBACK_IMG)}
+          />
+        )}
 
-        {/* Рейтинг — без тени, чуть меньше */}
+        {/* Рейтинг (id) — левый верхний угол, без фона */}
         <div
           className="absolute top-2 left-2"
           ref={tipRef}
